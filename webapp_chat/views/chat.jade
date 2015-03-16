@@ -1,0 +1,58 @@
+extends layout
+
+		
+block customcss
+	link(rel='stylesheet', href='/stylesheets/chat.css')
+block customjs
+	script(src="javascripts/socket.io-1.3.4.js")
+	script.
+		var current_users = {};
+		var chatWindowHeight = 0;
+		var socket = io.connect("http://127.0.0.1:8080");
+		var params = {};
+		params["room"] = "#{room}";
+		params["nick"] = "#{nickname}";
+		function emitmsg(){
+			console.log("Clicked");
+			params["msg"] = $("#m").val();
+			socket.emit("chat message", params);
+			$("#messages").append("<p>Me: "+params["msg"]+"</p>");							
+			$("#m").val("");
+		}
+		socket.on("new message", function(msg){
+			$("#messages").append("<p>"+msg+"</p>");
+			$("#messages").scrollBottom = $("#messages").scrollHeight;
+		});
+		socket.on("handshake", function(data){
+			if(data["handshake"] === true){
+				socket.emit('join_room', params);
+			}
+		});
+		socket.on("new joinee", function(data){
+			console.log("Handling new joinee");
+			console.log(data["socket_id"] +" "+data["nick"]);
+			current_users[data["socket_id"]] = data["nick"];
+		});
+		socket.on("user left", function(data){
+			console.log(current_users);
+			$("#messages").append("<p><i>"+current_users[data["socket_id"]]+" left</i></p>");
+			current_users[data["socket_id"]] = undefined;
+		});
+		socket.on("previous clients", function(data){
+			console.log("ConCurr :"+data["concurrent_users"]);
+			current_users = data["concurrent_users"];
+		})
+
+block content
+	.wrap
+		.container-fluid
+			#messages
+			.push
+	.footer
+		div.container-fluid
+			div.row
+				form
+				div.col-xs-8.col-sm.9
+					input(id="m", autocomplete="off", class="form-control input-lg", rows="3")
+				div.col-xs-4.col-sm.3
+					input.btn.btn-primary.btn-lg.btn-block(type="button", id="postmsg", value="Post", onclick="emitmsg();")

@@ -1,0 +1,21 @@
+extends layout
+
+block content
+	div(style="padding: 30px;")
+		form(name="enterchat", action="/chat", method="post", role="form")
+			div(class="form-group")
+				lable(for="nick")
+					!= 'Nickname : '
+				input.form-control(type="text", id="nick", name="nick")
+			div(class="form-group")
+				lable(for="room")
+					!= 'Pick Room : '
+				select.form-control(id="room", name="room")
+					option(value="room1")
+						!= 'Room1'
+					option(value="room2")
+						!= 'Room2'
+					option(value="default",selected)
+						!= 'Default'
+			div(class="form-group")
+				input(type="submit", id="joinchat", value="Join Chat",class="btn btn-primary")

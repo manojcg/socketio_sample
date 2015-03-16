@@ -1,0 +1,22 @@
+include mixins
+doctype html
+html
+	head
+		title= title
+		link(rel='stylesheet', href='/stylesheets/bootstrap.min.css')
+		link(rel='stylesheet', href='/stylesheets/style.css')
+		block customcss
+
+		script(src='javascripts/jquery-1.11.2.min.js')
+		script(src='javascripts/bootstrap.min.js')
+
+		block customjs
+	body
+	+nav("Chat App", "fixed-top")
+	div.container-fluid
+			div.row
+				div.col-md-6
+					
+					block content
+				div.col-md-4.col-md-offset-2.chatsidebar
+					!= '&nbsp;'
