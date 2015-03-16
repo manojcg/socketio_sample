@@ -1,48 +1,91 @@
-var app = require('express')();
-var http = require('http').createServer(app);
-var io = require('socket.io')(http);
-var utils = require('./utils');
-var Q = require('q');
+#!/usr/bin/env node
 
-function disconnect(socket){
-    var room = socket.chatroom;
+/**
+ * Module dependencies.
+ */
 
-    var user_info;
-    user_info = utils.redis_remove(room, socket.id);
-    if(room){
-        console.log('Emitting on disconnect');
-        io.to(room).emit('user left', {
-            "socket_id" : socket.id
-        });
-    }
+var app = require('./app');
+var debug = require('debug')('webapp_chat:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
 }
-io.on('connection', function(socket){
-   console.log("A new socket :" + socket);
-    socket.emit('handshake', {'handshake' : true});
-    socket.on('join_room', function(data){
-        socket.join(data["room"]);
-        socket.chatroom = data["room"];
-        data['socket_id'] = socket.id;
-        socket.broadcast.to(socket.chatroom).emit('new joinee', {
-            "socket_id": data["socket_id"],
-            "nick":  data["nick"]
-        });
-        utils.getConcurrentUsers(socket.chatroom).then(function(concurrent_users) {
-            utils.redis_add(data["room"], data["socket_id"], data);
-            io.to(socket.id).emit('previous clients', {
-                "concurrent_users": concurrent_users
-            });
-        });
-    });
-    socket.on('disconnect', function(){
-        disconnect(socket);
-        console.log('user disconnected');
-    });
-    socket.on('chat message', function(data){
-        socket.broadcast.to(data["room"]).emit('new message', data["nick"]+": "+data["msg"]);
-    });
-});
 
-http.listen(8080, function() {
-    console.log("Listening on 8080");
-});
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
